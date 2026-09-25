@@ -28,12 +28,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Carrega o modelo ArcFace InsightFace (buffalo_l: ResNet-50 512-d)
-print("🧠 Inicializando ArcFace (buffalo_l)...")
+# 1. Carrega o modelo ArcFace InsightFace em modo otimizado para memória (< 250MB)
+print("🧠 Inicializando ArcFace (buffalo_l: detecção + reconhecimento)...")
 models_root = os.path.abspath(os.getenv("MODELS_PATH", "models"))
-face_analyzer = FaceAnalysis(name="buffalo_l", root=models_root)
+face_analyzer = FaceAnalysis(
+    name="buffalo_l",
+    root=models_root,
+    allowed_modules=["detection", "recognition"],
+)
 face_analyzer.prepare(ctx_id=-1, det_size=(640, 640))
-print("✅ ArcFace carregado com sucesso e pronto para inferência!")
+print("✅ ArcFace carregado com sucesso (modo leve para Render Free)!")
 
 class ExtractRequest(BaseModel):
     image: str  # Base64 data URL ou base64 raw
