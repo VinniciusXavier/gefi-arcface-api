@@ -12,8 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Baixa previamente o modelo buffalo_l e remove os 260MB de modelos desnecessários (3D, 2D e genderage)
-RUN python3 -c "import onnxruntime as ort; so = ort.SessionOptions(); so.enable_cpu_mem_arena = False; so.intra_op_num_threads = 1; import insightface; app = insightface.app.FaceAnalysis(name='buffalo_l', root='/app/models', allowed_modules=['detection', 'recognition'], sess_options=so); app.prepare(ctx_id=-1, det_size=(640,640))" \
+# Baixa previamente buffalo_l, converte ArcFace para INT8 (de 166MB para 41MB) e remove os 260MB de modelos desnecessários
+RUN python3 -c "import onnxruntime as ort; from onnxruntime.quantization import quantize_dynamic, QuantType; so = ort.SessionOptions(); so.enable_cpu_mem_arena = False; so.intra_op_num_threads = 1; import insightface; app = insightface.app.FaceAnalysis(name='buffalo_l', root='/app/models', allowed_modules=['detection', 'recognition'], sess_options=so); app.prepare(ctx_id=-1, det_size=(640,640)); quantize_dynamic('/app/models/models/buffalo_l/w600k_r50.onnx', '/app/models/models/buffalo_l/w600k_r50_int8.onnx', weight_type=QuantType.QInt8)" \
+    && mv -f /app/models/models/buffalo_l/w600k_r50_int8.onnx /app/models/models/buffalo_l/w600k_r50.onnx \
     && rm -f /app/models/models/buffalo_l/1k3d68.onnx \
     && rm -f /app/models/models/buffalo_l/2d106det.onnx \
     && rm -f /app/models/models/buffalo_l/genderage.onnx
