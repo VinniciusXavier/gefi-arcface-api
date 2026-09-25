@@ -28,13 +28,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. Carrega o modelo ArcFace InsightFace em modo otimizado para memória (< 250MB)
-print("🧠 Inicializando ArcFace (buffalo_l: detecção + reconhecimento)...")
+# 1. Configurações de limite rígido de memória para caber no Render Free (< 350MB)
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
+import onnxruntime as ort
+
+so = ort.SessionOptions()
+so.enable_cpu_mem_arena = False
+so.intra_op_num_threads = 1
+so.inter_op_num_threads = 1
+so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+
+print("🧠 Inicializando ArcFace (buffalo_l: detecção + reconhecimento com arena desativada)...")
 models_root = os.path.abspath(os.getenv("MODELS_PATH", "models"))
 face_analyzer = FaceAnalysis(
     name="buffalo_l",
     root=models_root,
     allowed_modules=["detection", "recognition"],
+    sess_options=so,
 )
 face_analyzer.prepare(ctx_id=-1, det_size=(640, 640))
 print("✅ ArcFace carregado com sucesso (modo leve para Render Free)!")
